@@ -51,8 +51,8 @@ def margin_loss(digicaps, labels_onehot):
     m_neg = 0.1
     lbda = 0.5
     # pdb.set_trace()
-    m1 = margin_mask(m_pos - norm_vec)
-    m2 = margin_mask(norm_vec - m_neg)
+    m1 = margin_mask(m_pos - norm_vec) ** 2
+    m2 = margin_mask(norm_vec - m_neg) ** 2
     mloss = ((labels_onehot * m1) + (lbda * (1. - labels_onehot) * m2)).sum(-1)
     mloss = mloss.sum(-1).mean()
     return mloss
