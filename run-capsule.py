@@ -18,8 +18,9 @@ data = data[index]
 labels = labels[index].flatten()
 
 VAL_FRAC = 0.9
-train_x, train_y = data[:int(VAL_FRAC * data.shape[0])], labels[:int(VAL_FRAC * data.shape[0])]
-val_x, val_y = data[int(VAL_FRAC * data.shape[0]):], labels[int(VAL_FRAC * data.shape[0]):]
+train_x, train_y = data[:int(VAL_FRAC * data.shape[0])
+                        ], labels[:int(VAL_FRAC * data.shape[0])]
+val_x, val_y = data[int(VAL_FRAC * data.shape[0])                    :], labels[int(VAL_FRAC * data.shape[0]):]
 
 
 def get_onehot(tensor, labels=10):
