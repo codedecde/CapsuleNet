@@ -6,10 +6,12 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 
 
-# TODO: Implement softnorm instead of norm, as gradient may misbehave on backprop
-# TODO: Reconstruction loss to be added in forward?
-# TODO: In testing, gold label can't be used, must use prediction from digicaps to mask
-# TODO: Can vectorize squashing operation (have an idea)
+# TODO: Speed up dynamic routing, still takes an insane amount of time
+# TODO: There's one dimensional mismatch at line 162 in reconstruct, due to masking
+# TODO: GPU Support
+# TODO: Validation loop
+# TODO: Pytorch dataloaders
+
 class CapsuleNet(nn.Module):
     def __init__(self, **kwargs):
         super(CapsuleNet, self).__init__()
