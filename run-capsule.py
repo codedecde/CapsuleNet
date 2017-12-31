@@ -130,7 +130,7 @@ for epoch in xrange(NEPOCHS):
     np.random.shuffle(index)
     train_x, train_y = train_x[index], train_y[index]
     steps = -(- train_x.shape[0] // BATCH_SIZE)
-    for step, ix in tqdm(enumerate(xrange(0, train_x.shape[0], BATCH_SIZE))):
+    for step, ix in enumerate(xrange(0, train_x.shape[0], BATCH_SIZE)):
         batch_x = train_x[ix: ix + BATCH_SIZE]
         batch_x = Variable(torch.Tensor(batch_x.astype('float')))
         batch_y = train_y[ix: ix + BATCH_SIZE]

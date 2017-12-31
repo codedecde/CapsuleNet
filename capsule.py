@@ -123,13 +123,13 @@ class CapsuleNet(nn.Module):
         caps_prime = caps.expand(
             caps.size(0), self.dcaps_n, caps.size(2), caps.size(3)).contiguous(
         ).view(-1, caps.size(-1)).unsqueeze(1)  # batch * 10 * 1152 x 1 x 8
-        print(caps_prime.size())
-        print(self.W.size())
+        print("caps_prime : ", caps_prime.size())
+        print("W : ", self.W.size())
         w_prime = self.W.unsqueeze(0).expand(caps.size(0), self.W.size(0), self.W.size(1), self.W.size(2), self.W.size(3)).contiguous(
         ).view(-1, self.W.size(-2), self.W.size(-1))  # batch * 10 *1152 x 8 x 16
-        print(w_prime.size())
+        print("w_prime : ", w_prime.size())
         u_hat = torch.bmm(caps_prime, w_prime).squeeze(1).view(
-            caps.size(0), self.dcaps_n, caps.size(1), -1)  # batch x 10 x 1152 x 16
+            caps.size(0), self.dcaps_n, caps.size(2), -1)  # batch x 10 x 1152 x 16
 
         print(u_hat.size())
         # batch x 10 x 1152
@@ -139,7 +139,7 @@ class CapsuleNet(nn.Module):
             b = b.cuda()
         # Setting up routing
         for i in xrange(self.n_iter):
-            c = F.softmax(b)
+            c = F.softmax(b, dim=-1)
             s = (c.unsqueeze(-1) * u_hat).sum(2)
             v = self.squash(s, -1)  # batch x 10 x 16
             a = (u_hat * v.unsqueeze(2)).sum(-1)
