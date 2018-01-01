@@ -7,8 +7,8 @@ import pdb
 import torch
 from tqdm import tqdm
 
-NEPOCHS = 1
-BATCH_SIZE = 16
+NEPOCHS = 200
+BATCH_SIZE = 32
 
 # parser = argparse.ArgumentParser(
 #     description='CapsuleNet with dynamic routing')
@@ -41,6 +41,7 @@ np.random.shuffle(index)
 data = data[index]
 labels = labels[index].flatten()
 
+# TODO: Small data for debugging
 data = data[:100]
 VAL_FRAC = 0.9
 train_x, train_y = data[:int(VAL_FRAC * data.shape[0])
@@ -91,7 +92,7 @@ def reconstruction_loss(reconstruction, orig):
         :param orig: batch x im_size
         :return rloss: The reconstruction loss
     """
-    rloss = ((reconstruction - orig) ** 2).sum(-1)
+    rloss = ((reconstruction - orig) ** 2).mean(-1)
     rloss = rloss.mean()
     return rloss
 
@@ -135,16 +136,17 @@ for epoch in xrange(NEPOCHS):
         batch_x = Variable(torch.Tensor(batch_x.astype('float')))
         batch_y = train_y[ix: ix + BATCH_SIZE]
         batch_y_onehot = get_onehot(batch_y)
-        batch_y = Variable(torch.LongTensor(batch_y.astype('int')))
+        # batch_y = Variable(torch.LongTensor(batch_y.astype('int')))
         batch_y_onehot = Variable(torch.FloatTensor(batch_y_onehot))
 
         digicaps = model(batch_x.view(-1, 28, 28).unsqueeze(1))
-        reconstruction = model.reconstruct(digicaps, batch_y)
+        reconstruction = model.reconstruct(digicaps, batch_y_onehot)
         mloss = margin_loss(digicaps, batch_y_onehot)
         rloss = reconstruction_loss(reconstruction, batch_x)
-        loss = mloss + 0.0005 * rloss
+        rloss = 0.0005 * rloss
+        loss = mloss + rloss
         loss.backward()
         opt.step()
         opt.zero_grad()
-        print loss.data.numpy()[0]
+        print "R Loss: %.4f\tM Loss: %.4f" % (rloss.data.numpy()[0], mloss.data.numpy()[0])
     # ==== Do validation stuff ============ #

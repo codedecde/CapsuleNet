@@ -7,7 +7,6 @@ from torch.autograd import Variable
 
 
 # TODO: Speed up dynamic routing, still takes an insane amount of time
-# TODO: There's one dimensional mismatch at line 162 in reconstruct, due to masking
 # TODO: GPU Support
 # TODO: Validation loop
 # TODO: Pytorch dataloaders
@@ -58,7 +57,7 @@ class CapsuleNet(nn.Module):
         self.register_parameter('W_ij', self.W)
         self.reconstruction_dims = [
             ('relu', 512), ('relu', 1024), ('sigmoid', 784)]
-        in_dim = self.dcaps_d
+        in_dim = self.dcaps_d * self.dcaps_n
         for ix, (activation, out_dim) in enumerate(self.reconstruction_dims):
             layer_name = 'reconstruction_%d' % (ix)
             layer = nn.Linear(in_dim, out_dim)
@@ -93,19 +92,19 @@ class CapsuleNet(nn.Module):
             :return v: batch x 10 x 16: The digicaps layer
         """
 
-        print(inp.size())
+        # print(inp.size())
         conv1 = F.relu(self.conv1(inp))  # batch x 256 x 20 x 20
 
-        print(conv1.size())
+        # print(conv1.size())
         pcaps = self.pcap(conv1)  # batch x 256 x 6 x 6
 
-        print(pcaps.size())
+        # print(pcaps.size())
         pcaps = pcaps.view(-1, self.pcaps_n, self.pcaps_d,
                            self.pcaps_h, self.pcaps_w)
         # BATCH X 32 X 8 X 6 X 6
-        print(pcaps.size())
+        # print(pcaps.size())
         caps = self.squash(pcaps, axis=2)
-        print(caps.size())
+        # print(caps.size())
         # caps = []
         # for i in xrange(self.pcaps_n):
         #     caps_val = getattr(self, 'pcaps_conv_%d' %
@@ -115,26 +114,26 @@ class CapsuleNet(nn.Module):
         # caps = torch.cat(caps, 1)  # batch x 32 x 8 x 6 x 6
 
         caps = caps.transpose(2, -1)  # batch x 32 x 6 x 6 x 8
-        print(caps.size())
+        # print(caps.size())
         caps = caps.contiguous().view(caps.size(0), -1, caps.size(-1)
                                       ).unsqueeze(1)  # batch x 1152 x 8
-        print("caps : ", caps.size())
+        # print("caps : ", caps.size())
         # Now the DigiCaps Layer
         caps_prime = caps.expand(
             caps.size(0), self.dcaps_n, caps.size(2), caps.size(3)).contiguous(
         ).view(-1, caps.size(-1)).unsqueeze(1)  # batch * 10 * 1152 x 1 x 8
-        print("caps_prime : ", caps_prime.size())
-        print("W : ", self.W.size())
+        # print("caps_prime : ", caps_prime.size())
+        # print("W : ", self.W.size())
         w_prime = self.W.unsqueeze(0).expand(caps.size(0), self.W.size(0), self.W.size(1), self.W.size(2), self.W.size(3)).contiguous(
         ).view(-1, self.W.size(-2), self.W.size(-1))  # batch * 10 *1152 x 8 x 16
-        print("w_prime : ", w_prime.size())
+        # print("w_prime : ", w_prime.size())
         u_hat = torch.bmm(caps_prime, w_prime).squeeze(1).view(
             caps.size(0), self.dcaps_n, caps.size(2), -1)  # batch x 10 x 1152 x 16
 
-        print(u_hat.size())
+        # print(u_hat.size())
         # batch x 10 x 1152
         b = Variable(torch.zeros((caps.size(0), self.dcaps_n, caps.size(2))))
-        print("b  : ", b.size())
+        # print("b  : ", b.size())
         if torch.cuda.is_available():
             b = b.cuda()
         # Setting up routing
@@ -144,19 +143,20 @@ class CapsuleNet(nn.Module):
             v = self.squash(s, -1)  # batch x 10 x 16
             a = (u_hat * v.unsqueeze(2)).sum(-1)
             b = b + a
-            print("v : ", v.size())
+            # print("v : ", v.size())
         return v
 
     def reconstruct(self, digicaps, gold_labels):
         """
         Reconstructs the image based on the gold label
             :param digicaps: batch x 10 x 16: The digicaps layer
-            :param gold_labels: batch,: The gold labels (Torch Variable)
+            :param gold_labels: batch x 10 : The one hot gold labels (Torch Variable)
             :return masked_v: batch x 784: The image
         """
-        idx = gold_labels.unsqueeze(
-            1).expand(gold_labels.size(0), digicaps.size(-1)).unsqueeze(1)
-        masked_v = torch.gather(digicaps, 1, idx).squeeze(1)
+        # idx = gold_labels.unsqueeze(
+        #    1).expand(gold_labels.size(0), digicaps.size(-1)).unsqueeze(1)
+        # masked_v = torch.gather(digicaps, 1, idx).squeeze(1)
+        masked_v = (digicaps * gold_labels.unsqueeze(-1)).view(digicaps.size(0), -1)  # batch x 160
         # self.reconstruction_dims = [('relu', 512), ('relu', 1024), ('sigmoid', 784)]
         for ix, (activation, _) in enumerate(self.reconstruction_dims):
             layer_name = 'reconstruction_%d' % (ix)
