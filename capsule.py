@@ -35,19 +35,13 @@ class CapsuleNet(nn.Module):
         self.pcaps_w = self.get_conv_dim(
             conv_w, self.pcaps_f, self.pcaps_s)  # 6
 
-        # How about a combined layer
-
         self.pcap = nn.Conv2d(self.conv1_c, self.pcaps_n * self.pcaps_d,
                               kernel_size=self.pcaps_f, stride=self.pcaps_s)
-
-        # for i in xrange(self.pcaps_n):
-        #     setattr(self, 'pcaps_conv_%d' % (i), nn.Conv2d(
-        #         self.conv1_c, self.pcaps_d, self.pcaps_f, stride=self.pcaps_s))
 
         # DigiCaps Layer
         self.dcaps_n = 10
         self.dcaps_d = 16
-        self.n_iter = 2
+        self.n_iter = 3
 
         # W = 10 x 1152 x (8 x 16)
         self.W = nn.Parameter(torch.Tensor(np.random.normal(0, 0.01, (self.dcaps_n,
@@ -102,31 +96,20 @@ class CapsuleNet(nn.Module):
         pcaps = pcaps.view(-1, self.pcaps_n, self.pcaps_d,
                            self.pcaps_h, self.pcaps_w)
         # BATCH X 32 X 8 X 6 X 6
-        # print(pcaps.size())
-        caps = self.squash(pcaps, axis=2)
-        # print(caps.size())
-        # caps = []
-        # for i in xrange(self.pcaps_n):
-        #     caps_val = getattr(self, 'pcaps_conv_%d' %
-        #                        (i))(conv1)  # batch x 8 x 6 x 6
-        #     caps_val = self.squash(caps_val, 1)  # batch x 8 x 6 x 6
-        #     caps.append(caps_val.unsqueeze(1))
-        # caps = torch.cat(caps, 1)  # batch x 32 x 8 x 6 x 6
 
+        caps = self.squash(pcaps, axis=2)
         caps = caps.transpose(2, -1)  # batch x 32 x 6 x 6 x 8
-        # print(caps.size())
         caps = caps.contiguous().view(caps.size(0), -1, caps.size(-1)
                                       ).unsqueeze(1)  # batch x 1152 x 8
-        # print("caps : ", caps.size())
+
         # Now the DigiCaps Layer
         caps_prime = caps.expand(
             caps.size(0), self.dcaps_n, caps.size(2), caps.size(3)).contiguous(
         ).view(-1, caps.size(-1)).unsqueeze(1)  # batch * 10 * 1152 x 1 x 8
-        # print("caps_prime : ", caps_prime.size())
-        # print("W : ", self.W.size())
+
         w_prime = self.W.unsqueeze(0).expand(caps.size(0), self.W.size(0), self.W.size(1), self.W.size(2), self.W.size(3)).contiguous(
         ).view(-1, self.W.size(-2), self.W.size(-1))  # batch * 10 *1152 x 8 x 16
-        # print("w_prime : ", w_prime.size())
+
         u_hat = torch.bmm(caps_prime, w_prime).squeeze(1).view(
             caps.size(0), self.dcaps_n, caps.size(2), -1)  # batch x 10 x 1152 x 16
 
@@ -156,7 +139,8 @@ class CapsuleNet(nn.Module):
         # idx = gold_labels.unsqueeze(
         #    1).expand(gold_labels.size(0), digicaps.size(-1)).unsqueeze(1)
         # masked_v = torch.gather(digicaps, 1, idx).squeeze(1)
-        masked_v = (digicaps * gold_labels.unsqueeze(-1)).view(digicaps.size(0), -1)  # batch x 160
+        masked_v = (digicaps * gold_labels.unsqueeze(-1)
+                    ).view(digicaps.size(0), -1)  # batch x 160
         # self.reconstruction_dims = [('relu', 512), ('relu', 1024), ('sigmoid', 784)]
         for ix, (activation, _) in enumerate(self.reconstruction_dims):
             layer_name = 'reconstruction_%d' % (ix)

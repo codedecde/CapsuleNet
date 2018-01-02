@@ -1,4 +1,5 @@
 import scipy.io as sio
+import argparse
 import numpy as np
 from capsule import CapsuleNet
 from torch.autograd import Variable
@@ -10,13 +11,13 @@ from tqdm import tqdm
 NEPOCHS = 200
 BATCH_SIZE = 32
 
-# parser = argparse.ArgumentParser(
-#     description='CapsuleNet with dynamic routing')
-# parser.add_argument('--cuda', action='store_true', default=False,
-#                     help='enables CUDA training (default: False)')
+parser = argparse.ArgumentParser(
+    description='CapsuleNet with dynamic routing')
+parser.add_argument('--cuda', action='store_true', default=False,
+                    help='enables CUDA training (default: False)')
 
-# args = parser.parse_args()
-# args.cuda = args.cuda and torch.cuda.is_available()
+args = parser.parse_args()
+args.cuda = args.cuda and torch.cuda.is_available()
 
 # ========= Set Seed for replication ==== #
 np.random.seed(42)
@@ -42,11 +43,12 @@ data = data[index]
 labels = labels[index].flatten()
 
 # TODO: Small data for debugging
-data = data[:100]
+# data = data[:100]
+
 VAL_FRAC = 0.9
 train_x, train_y = data[:int(VAL_FRAC * data.shape[0])
                         ], labels[: int(VAL_FRAC * data.shape[0])]
-val_x, val_y = data[int(VAL_FRAC * data.shape[0]):], labels[int(VAL_FRAC * data.shape[0]):]
+val_x, val_y = data[int(VAL_FRAC * data.shape[0])                    :], labels[int(VAL_FRAC * data.shape[0]):]
 
 
 def get_onehot(tensor, labels=10):
@@ -99,8 +101,8 @@ def reconstruction_loss(reconstruction, orig):
 
 # ========= CapsuleNet ================== #
 model = CapsuleNet()
-# if args.cuda:
-#     model.cuda()
+if args.cuda:
+    model.cuda()
 
 opt = optim.Adam(model.parameters(), lr=0.01)
 
@@ -138,6 +140,10 @@ for epoch in xrange(NEPOCHS):
         batch_y_onehot = get_onehot(batch_y)
         # batch_y = Variable(torch.LongTensor(batch_y.astype('int')))
         batch_y_onehot = Variable(torch.FloatTensor(batch_y_onehot))
+
+        if args.cuda:
+            batch_x, batch_y, batch_y_onehot = batch_x.cuda(
+            ), batch_y.cuda(), batch_y_onehot.cuda()
 
         digicaps = model(batch_x.view(-1, 28, 28).unsqueeze(1))
         reconstruction = model.reconstruct(digicaps, batch_y_onehot)
