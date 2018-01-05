@@ -6,9 +6,9 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 
 
-# TODO: Speed up dynamic routing, still takes an insane amount of time
-# TODO: GPU Support
-# TODO: Validation loop
+# DONE: Speed up dynamic routing, still takes an insane amount of time
+# DONE: GPU Support
+# DONE: Validation loop
 # TODO: Pytorch dataloaders
 
 class CapsuleNet(nn.Module):
