@@ -8,7 +8,7 @@ import pdb
 import torch
 from tqdm import tqdm
 
-NEPOCHS = 1
+NEPOCHS = 20
 BATCH_SIZE = 1000
 
 parser = argparse.ArgumentParser(
