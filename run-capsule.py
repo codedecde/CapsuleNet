@@ -9,7 +9,7 @@ import torch
 from tqdm import tqdm
 
 NEPOCHS = 1
-BATCH_SIZE = 32
+BATCH_SIZE = 1000
 
 parser = argparse.ArgumentParser(
     description='CapsuleNet with dynamic routing')
@@ -45,7 +45,7 @@ data = data[index]
 labels = labels[index].flatten()
 
 # TODO: Small data for debugging
-data = data[:320]
+# data = data[:320]
 
 VAL_FRAC = 0.9
 train_x, train_y = data[:int(VAL_FRAC * data.shape[0])
@@ -182,9 +182,9 @@ if args.train:
         pred_onehot = Variable(torch.FloatTensor(
             get_onehot(pred.data.numpy())))
         reconstruction = model.reconstruct(digicaps, pred_onehot)
-        print("batch_y_onehot : ", batch_y_onehot.size())
-        print("digicaps : ", digicaps.size())
-        print("pred_onehot : ", pred_onehot.size())
+        # print("batch_y_onehot : ", batch_y_onehot.size())
+        # print("digicaps : ", digicaps.size())
+        # print("pred_onehot : ", pred_onehot.size())
         mloss = margin_loss(digicaps, batch_y_onehot)
         rloss = reconstruction_loss(reconstruction, batch_x)
         rloss = 0.0005 * rloss
