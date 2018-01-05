@@ -143,7 +143,7 @@ if args.train:
             batch_x = Variable(torch.Tensor(batch_x.astype('float')))
             batch_y = train_y[ix: ix + BATCH_SIZE]
             batch_y_onehot = get_onehot(batch_y)
-            # batch_y = Variable(torch.LongTensor(batch_y.astype('int')))
+            batch_y = Variable(torch.LongTensor(batch_y.astype('int')))
             batch_y_onehot = Variable(torch.FloatTensor(batch_y_onehot))
 
             if args.cuda:
