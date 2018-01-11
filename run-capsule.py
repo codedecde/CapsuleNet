@@ -10,9 +10,6 @@ from tqdm import tqdm
 import torch.utils.data as data
 from torchvision import datasets, transforms
 
-NEPOCHS = 20
-BATCH_SIZE = 32
-
 parser = argparse.ArgumentParser(
     description='CapsuleNet with dynamic routing')
 parser.add_argument('--cuda',
@@ -34,6 +31,8 @@ parser.add_argument('--lr',
 args = parser.parse_args()
 args.cuda = args.cuda and torch.cuda.is_available()
 
+NEPOCHS = args.epochs
+BATCH_SIZE = args.batch_size
 # ========= Set Seed for replication ==== #
 np.random.seed(42)
 
@@ -144,7 +143,7 @@ for epoch in xrange(args.epochs):
         # print("batch_y_onehot : ", batch_y_onehot.size())
         reconstruction = model.reconstruct(digicaps, batch_y_onehot)
 
-        print("reconstruction : ", reconstruction.size())
+        # print("reconstruction : ", reconstruction.size())
         mloss = margin_loss(digicaps, batch_y_onehot)
         rloss = reconstruction_loss(reconstruction, batch_x)
         loss = mloss + 0.0005 * rloss
