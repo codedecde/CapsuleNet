@@ -126,7 +126,7 @@ opt = optim.Adam(model.parameters(), lr=args.lr)
 # ========= TrainingLoop ================ #
 loss_list = []
 for epoch in xrange(args.epochs):
-    for (batch_x, batch_y) in train_loader:
+    for batch_id, (batch_x, batch_y) in enumerate(train_loader):
         batch_y_onehot = torch.FloatTensor(get_onehot(batch_y.numpy()))
 
         if args.cuda:
@@ -138,10 +138,10 @@ for epoch in xrange(args.epochs):
 
         digicaps = model(batch_x)
 
-        print("digicaps : ", digicaps.size())
-        print("batch_x : ", batch_x.size())
-        print("batch_y : ", batch_y.size())
-        print("batch_y_onehot : ", batch_y_onehot.size())
+        # print("digicaps : ", digicaps.size())
+        # print("batch_x : ", batch_x.size())
+        # print("batch_y : ", batch_y.size())
+        # print("batch_y_onehot : ", batch_y_onehot.size())
         reconstruction = model.reconstruct(digicaps, batch_y_onehot)
 
         print("reconstruction : ", reconstruction.size())
@@ -154,7 +154,10 @@ for epoch in xrange(args.epochs):
         opt.step()
         opt.zero_grad()
 
-        print "R Loss: %.4f\tM Loss: %.4f" % (rloss.data.numpy()[0], mloss.data.numpy()[0])
+        print('Train Epoch: {} [{}/{} ({:.0f}%)]\tR Loss: {:.6f}\tM Loss: {:.6f}'.format(
+            epoch, batch_id * batch_x.size(0), len(train_loader.dataset),
+            100. * batch_id / len(train_loader), rloss.data.numpy()[0], mloss.data.numpy()[0]))
+        # print "Epoch %d : R Loss: %.4f\tM Loss: %.4f" % (epoch, rloss.data.numpy()[0], mloss.data.numpy()[0])
 
 # ========= Validation ================ #
 for (batch_x, batch_y) in test_loader:
