@@ -165,7 +165,7 @@ if args.train:
             # print "Epoch %d : R Loss: %.4f\tM Loss: %.4f" % (epoch, rloss.data.numpy()[0], mloss.data.numpy()[0])
 
     plt.plot(loss_list)
-    plt.savefig("loss.png")
+    plt.savefig("loss, dim=1.png")
 
 # ========= Validation ================ #
 loss = 0.0

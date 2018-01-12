@@ -121,7 +121,7 @@ class CapsuleNet(nn.Module):
             b = b.cuda()
         # Setting up routing
         for i in xrange(self.n_iter):
-            c = F.softmax(b, dim=-1)
+            c = F.softmax(b, dim=1)
 
             # print("c : ", torch.sum(c, dim=-1))
             s = (c.unsqueeze(-1) * u_hat).sum(2)
