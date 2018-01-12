@@ -159,7 +159,7 @@ if args.train:
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tR Loss: {:.6f}\tM Loss: {:.6f}'.format(
                 epoch, batch_id *
                 batch_x.size(0), len(train_loader.dataset),
-                100. * batch_id / len(train_loader), rloss.data.numpy()[0], mloss.data.numpy()[0]))
+                100. * batch_id / len(train_loader), rloss.cpu().data.numpy()[0], mloss.cpu().data.numpy()[0]))
             # print "Epoch %d : R Loss: %.4f\tM Loss: %.4f" % (epoch, rloss.data.numpy()[0], mloss.data.numpy()[0])
 
     plt.plot(loss_list)
