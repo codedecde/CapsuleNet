@@ -116,12 +116,14 @@ class CapsuleNet(nn.Module):
         # print(u_hat.size())
         # batch x 10 x 1152
         b = Variable(torch.zeros((caps.size(0), self.dcaps_n, caps.size(2))))
-        print("b  : ", b.size())
+        # print("b  : ", b.size())
         if torch.cuda.is_available():
             b = b.cuda()
         # Setting up routing
         for i in xrange(self.n_iter):
-            c = F.softmax(b, dim=1)
+            c = F.softmax(b, dim=-1)
+
+            # print("c : ", torch.sum(c, dim=-1))
             s = (c.unsqueeze(-1) * u_hat).sum(2)
             v = self.squash(s, -1)  # batch x 10 x 16
             a = (u_hat * v.unsqueeze(2)).sum(-1)

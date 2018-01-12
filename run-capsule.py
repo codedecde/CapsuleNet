@@ -9,6 +9,7 @@ import torch
 from tqdm import tqdm
 import torch.utils.data as data
 from torchvision import datasets, transforms
+import matplotlib.pyplot as plt
 
 parser = argparse.ArgumentParser(
     description='CapsuleNet with dynamic routing')
@@ -19,7 +20,7 @@ parser.add_argument('--train',
                     action='store_true', default=False,
                     help='train the Capsnet (default: False)')
 parser.add_argument('--batch-size',
-                    type=int, default=32, metavar='N',
+                    type=int, default=2, metavar='N',
                     help='input batch size for training (default: 32)')
 parser.add_argument('--epochs',
                     type=int, default=1, metavar='N',
@@ -123,61 +124,75 @@ if args.cuda:
 opt = optim.Adam(model.parameters(), lr=args.lr)
 
 # ========= TrainingLoop ================ #
-loss_list = []
-for epoch in xrange(args.epochs):
-    for batch_id, (batch_x, batch_y) in enumerate(train_loader):
-        batch_y_onehot = torch.FloatTensor(get_onehot(batch_y.numpy()))
+if args.train:
+    loss_list = []
+    for epoch in xrange(args.epochs):
+        for batch_id, (batch_x, batch_y) in enumerate(train_loader):
 
-        if args.cuda:
-            batch_x, batch_y, batch_y_onehot = batch_x.cuda(
-            ), batch_y.cuda(), batch_y_onehot.cuda()
+            batch_y_onehot = torch.FloatTensor(get_onehot(batch_y.numpy()))
 
-        batch_x, batch_y, batch_y_onehot = Variable(batch_x), \
-            Variable(batch_y), Variable(batch_y_onehot)
+            if args.cuda:
+                batch_x, batch_y, batch_y_onehot = batch_x.cuda(
+                ), batch_y.cuda(), batch_y_onehot.cuda()
 
-        digicaps = model(batch_x)
+            batch_x, batch_y, batch_y_onehot = Variable(batch_x), \
+                Variable(batch_y), Variable(batch_y_onehot)
 
-        # print("digicaps : ", digicaps.size())
-        # print("batch_x : ", batch_x.size())
-        # print("batch_y : ", batch_y.size())
-        # print("batch_y_onehot : ", batch_y_onehot.size())
-        reconstruction = model.reconstruct(digicaps, batch_y_onehot)
+            digicaps = model(batch_x)
 
-        # print("reconstruction : ", reconstruction.size())
-        mloss = margin_loss(digicaps, batch_y_onehot)
-        rloss = reconstruction_loss(reconstruction, batch_x)
-        loss = mloss + 0.0005 * rloss
-        loss_list.append(loss.data[0])
+            # print("digicaps : ", digicaps.size())
+            # print("batch_x : ", batch_x.size())
+            # print("batch_y : ", batch_y.size())
+            # print("batch_y_onehot : ", batch_y_onehot.size())
+            reconstruction = model.reconstruct(digicaps, batch_y_onehot)
 
-        loss.backward()
-        opt.step()
-        opt.zero_grad()
+            # print("reconstruction : ", reconstruction.size())
+            mloss = margin_loss(digicaps, batch_y_onehot)
+            rloss = reconstruction_loss(reconstruction, batch_x)
+            loss = mloss + 0.0005 * rloss
+            loss_list.append(loss.data[0])
 
-        print('Train Epoch: {} [{}/{} ({:.0f}%)]\tR Loss: {:.6f}\tM Loss: {:.6f}'.format(
-            epoch, batch_id * batch_x.size(0), len(train_loader.dataset),
-            100. * batch_id / len(train_loader), rloss.data.numpy()[0], mloss.data.numpy()[0]))
-        # print "Epoch %d : R Loss: %.4f\tM Loss: %.4f" % (epoch, rloss.data.numpy()[0], mloss.data.numpy()[0])
+            loss.backward()
+            opt.step()
+            opt.zero_grad()
+
+            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tR Loss: {:.6f}\tM Loss: {:.6f}'.format(
+                epoch, batch_id *
+                batch_x.size(0), len(train_loader.dataset),
+                100. * batch_id / len(train_loader), rloss.data.numpy()[0], mloss.data.numpy()[0]))
+            # print "Epoch %d : R Loss: %.4f\tM Loss: %.4f" % (epoch, rloss.data.numpy()[0], mloss.data.numpy()[0])
+
+    plt.plot(loss_list)
+    plt.savefig("loss.png")
 
 # ========= Validation ================ #
-for (batch_x, batch_y) in test_loader:
+loss = 0.0
+for batch_id, (batch_x, batch_y) in enumerate(test_loader):
     batch_y_onehot = torch.FloatTensor(get_onehot(batch_y.numpy()))
 
     if args.cuda:
         batch_x, batch_y, batch_y_onehot = batch_x.cuda(
         ), batch_y.cuda(), batch_y_onehot.cuda()
 
-    batch_x, batch_y, batch_y_onehot = Variable(batch_x.no_grad()), \
-        Variable(batch_y.no_grad()), Variable(batch_y_onehot.no_grad())
+    batch_x, batch_y, batch_y_onehot = Variable(batch_x, volatile=True), \
+        Variable(batch_y, volatile=True), \
+        Variable(batch_y_onehot, volatile=True)
 
     digicaps = model(batch_x)
-
+    print("digicaps : ", digicaps)
     _, pred = torch.max(torch.norm(digicaps, p=2, dim=2), dim=1)
     pred_onehot = Variable(torch.FloatTensor(get_onehot(pred.data.numpy())))
-    reconstruction = model.reconstruct(digicaps, pred)
+    print("pred : ", pred)
+    print("pred_onehot : ", pred_onehot)
+    reconstruction = model.reconstruct(digicaps, pred_onehot)
 
     mloss = margin_loss(digicaps, pred_onehot)
     rloss = reconstruction_loss(reconstruction, batch_x)
     loss += mloss + 0.0005 * rloss
+
+    print('[{}/{} ({:.0f}%)]\tR Loss: {:.6f}\tM Loss: {:.6f}'.format(
+        batch_id * batch_x.size(0), len(train_loader.dataset),
+        100. * batch_id / len(train_loader), rloss.data.numpy()[0], mloss.data.numpy()[0]))
 
 print("Average Loss: %.4f".format(loss.data.numpy()[0] / len(test_loader)))
 # if args.train:
@@ -216,7 +231,7 @@ print("Average Loss: %.4f".format(loss.data.numpy()[0] / len(test_loader)))
 # for step, ix in enumerate(xrange(0, val_x.shape[0], BATCH_SIZE)):
 #     batch_x = val_x[ix: ix + BATCH_SIZE]
 #     batch_x = Variable(torch.Tensor(
-#         batch_x.astype('float')))
+#         batch_x.astype('float')))r
 #     batch_y = val_y[ix: ix + BATCH_SIZE]
 #     batch_y_onehot = get_onehot(batch_y)
 #     # batch_y = Variable(torch.LongTensor(batch_y.astype('int')))
