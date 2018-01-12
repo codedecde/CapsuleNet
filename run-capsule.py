@@ -9,6 +9,8 @@ import torch
 from tqdm import tqdm
 import torch.utils.data as data
 from torchvision import datasets, transforms
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 parser = argparse.ArgumentParser(
